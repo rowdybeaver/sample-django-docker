@@ -1,0 +1,54 @@
+version: "3.7"
+volumes:
+  my-db:
+
+services:
+  db:
+    image: postgres
+    volumes:
+      - my-db:/var/lib/postgresql/data
+    env_file:
+      - ./unittest.env
+
+  redis:
+    image: redis
+
+  app:
+    build:
+      context: .
+      target: applayer
+    restart: "no"
+    env_file:
+      - ./unittest.env
+    volumes:
+      - ./project/:/code/
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - db
+      - redis
+    entrypoint: python /wait_entrypoint.py --quiet db:5432 redis:6379 --
+    command: python manage.py runserver 0.0.0.0:8000
+
+  tasks:
+    build:
+      context: .
+      target: applayer
+    restart: unless-stopped
+    restart: "no"
+    env_file:
+      - ./unittest.env
+    volumes:
+      - ./project/:/code/
+    depends_on:
+      - db
+      - redis
+    entrypoint: python /wait_entrypoint.py --quiet db:5432 redis:6379 --
+    command: celery worker -A project -B -l INFO 
+
+  httpd:
+    # We build this to ensure we can create the target, but not needed to test
+    build:
+      context: .
+      target: staticlayer
+    command: /bin/true

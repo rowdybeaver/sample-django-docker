@@ -1,0 +1,41 @@
+version: "3.7"
+volumes:
+  live-db:
+
+services:
+  db:
+    image: postgres
+    volumes:
+      - live-db:/var/lib/postgresql/data
+    env_file:
+      - ./live.env
+
+  redis:
+    image: redis
+
+  tasks:
+    image: my-applayer:latest
+    env_file:
+      - ./live.env
+    depends_on:
+      - db
+      - redis
+    entrypoint: python /wait_entrypoint.py -q db:5432 redis:6379 --
+    command: celery worker -A project -B -Q celery -l info
+
+  app:
+    image: my-applayer:latest
+    env_file:
+      - ./live.env
+    depends_on:
+      - db
+      - redis
+    entrypoint: python /wait_entrypoint.py -q db:5432 redis:6379 --
+    command: /usr/local/bin/uwsgi --chdir /code --module project.wsgi --master --socket=0.0.0.0:8000 --processes=5 --vacuum
+
+  httpd:
+    image: my-staticlayer:latest
+    depends_on:
+      - app
+    ports:
+      - "127.0.0.1:8001:80"
