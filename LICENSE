@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 Skip to content
 Pull requests
@@ -46,6 +47,8 @@ Conditions
 This is not legal advice. Learn more about repository licenses.
 @rowdybeaver rowdybeaver Initial commit 01435b5 just now
 22 lines (17 sloc) 1.04 KB
+=======
+>>>>>>> 01435b5fd44cac0a2aff7040759ae647aafbc8b3
 MIT License
 
 Copyright (c) 2019 Rowdy Beaver
@@ -67,6 +70,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+<<<<<<< HEAD
 
     © 2019 GitHub, Inc.
     Terms
@@ -83,3 +87,5 @@ SOFTWARE.
     About
 
 
+=======
+>>>>>>> 01435b5fd44cac0a2aff7040759ae647aafbc8b3
