@@ -1,159 +1,102 @@
-# Django Docker Sample
+# Django Docker Sample #
 
-This was built in reference 
-to [a question on Reddit's Django forum](https://old.reddit.com/r/django/comments/bboibg/best_way_to_deploy_a_django_application_ansible/), 
-however this question has been asked before and a working set of examples was needed.
+This sample project was built to demonstrate several principles:
 
+  1. Running a Django project in Docker
+  2. Use of Docker's "multi-stage" build process
+  3. Use of `docker-compose` for development of the application
+  4. Use of Celery in Docker for asynchronous tasks
+  5. Uses advanced syntax for repeating sections of the `docker-compose.yml` file
+  6. Uses nginx in the 'live' version of the `docker-compose.yml` for static files
 
-This project provides an example for a Django application running under
-Docker and docker-compose.  It is meant for you to become familiar with the concepts and customize to your needs.
+There is a lot to discover in this simple application.  It is meant for you to become familiar with 
+the concepts and customize adapt them to your needs.
 
+At the heart of things, this is a simply Django 'hello world' application.
 
-This is not meant to be a fully functional application.  Indeed, it is almost completely from a 
-regular ```django-admin startproject project```, with changes made to settings.py to support some
-sample environment settings.
-
-This is meant to show the general structure of Django and Docker components.
-
-
-A very minimal sample Django project is included for testing and demonstration, with the imaginative name ```project```.
-
+You will need to have [Docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/) installed.
 
 It helps to be at least somewhat familiar with Docker and the syntax and details 
 for the [Dockerfile](https://docs.docker.com/engine/reference/builder/) 
 and [docker-compose.yml](https://docs.docker.com/compose/compose-file/) files.
 
-
-## The ```Dockerfile```
-
-Normally, the Dockerfile has a single 'FROM' base image and results in a single image, a **target**.  With a 
-multi-stage Dockerfile, there are several targets, allowing all (or some) of a previous target 
-can be referenced.
-
-This process assumes you have a Django project in the current directory (I use the name 'project' in the Dockerfile). We will
-also use a non-root user when running our application, so we will configure that, too.  It is a good security practice.
-
-The Dockerfile in this repo has several targets:
-
-    - 'appbuilder' - build on the python:3.6 and add Django, our application and its particular requirements, also creates a non-root user (a security precaution)
-    - 'applayer' - this target simply changes the default user (so it isn't 'root')
-    - 'staticbuilder' - build on the appbuilder layer to collect static files
-    - 'staticlayer' - references the NGINX and adds in configuration and just the static files
-
-We will only deploy two of these targets:
-
-    - applayer  Used for our compiled project files and for execution (runserver/uwsgi/gunicorn and celery)
-  
-    - staticlayer  Our dockerized web server and reverse proxy
-    
-    
-## The ```docker-compose.yml``` file
-
-The docker-compose.yml file will start the following containers:
-
-    - db  - The public postgres image
-    - redis - The public redis image
-    - app - The 'applayer' target running (runserver/uwsgi/gunicorn)
-    - tasks - The 'applayer' target running celery task 
-    - httpd - The 'staticlayer' target as our web server
-    
-Because Docker might start the 'app' container before the 'db' is ready, there is a ```wait_entrypoint.py``` script, to 
-ensure resources are accepting network connections.  Once the connections are opened, the compose file's ```command``` 
-will be invoked.
+The `Dockerfile` and `docker-compose.yml` files are well commented, but use the above references if more details are needed.
 
 
-## Development Environment
+## Running the development application ##
 
-The enclosed ```docker-compose.yml``` file will build the necessary target images, with some default image names (we
-don't even need to know the image names).
+In the directory containing this README file, simply run `docker-compose up` to build the initial images and start the containers. The
+logs for each service will appear.  To end the services, press `Ctrl+C`
 
+The command `docker-compose -d` will run the services in the background so you can use the terminal for other things. 
+View the logs of the background processes with `docker-compose logs -f app tasks` (view the logs from the 'app' and 'tasks' services).
+When running in background, use the command `docker-compose down` to stop all of the services.
 
-### Building the development images
+Once started, point a browser to [http://localhost:8000](http://localhost:8000) to view the
+results.
 
-We can test our ```Dockerfile``` build process by running:
-     
-     docker-compose build --pull
+The development containers reference the application's `project` parent directory, so changes made to the 
+application can be easily viewed without needing to rebuild anything, but a restart may be needed.
+Note that the 'app' service is running `manage.py runserver`, so it will restart as changes are
+made to the application code.  The 'task' container will need to be restarted to pick up the
+code changes.
 
-While the example project is simply a raw install of Django with a Postgres database.  The only other changes were to 
-show how the ```SECRET_KEY``` and ```POSTGRES_PASSWORD``` could be provided via environment variables (in 
-the ```unittest.env```).  The ```project/settings.py``` file also has several changes, including database, Celery, 
-and a ```STATIC_ROOT``` setting.
+While it shouldn't normally be needed, you can force a rebuild of the images (using
+fresh copies of the parent 'FROM' images) with the commands:
 
-For our testing, the ```app```definition will launch the application the ```runserver```.
+    docker-compose build --pull 
+    docker-compose pull
 
-Although referenced in the ```tasks``` definition in the ```docker-compose.yml``` file, the sample application code 
-does not have any Celery tasks defined (and there is no ```celery.py``` definition).  It is there as an example, to
-demonstrate that the same target can be built and referenced for different purposes.
+The last command will pull fresh copies of the static images (`postgres` and `redis`).
 
-The ```httpd``` task only forces a build of the ```staticlayer``` target, but does nothing (```/bin/true``` returns 
-exit code zero).  We don't need a web server in development, but we **do** want to ensure it can be built.
+These commands can also be invoked from the `./build-dev.sh` script.
 
+## Running the 'live' application ##
 
-### Launching the containers
+Once you have made any changes and tested them in the development environment, you would normally want to build
+formal Docker images in a CI/CD pipeline or workflow, then reference those in your production
+environment.  One advantage is that the production images will look very similar to your
+desktop development.  Since the Dockerfile includes all of the application dependencies into the image, there
+is little configuration on the production machine.
 
-To launch the application, run the command:
+### Building the Docker images ###
 
-    docker-compose up
+This will require static Docker images to be built.  In the directory with the README file, invoke the two commands.
+**NOTE** the period at the end of each line!
 
-Visiting [http://localhost:8000]() will let you know if Django is running.    
+    docker build --target applayer --tag my_applayer .
+    docker build --target staticlayer --tag my_staticlayer .
 
-Since the project directory is made directly available in the ```app``` container (with the ```volumes``` directive), 
-it will be restarted as changes are made.  This is precisely what we want in a development environment, but not 
-good for a live deployment.
+For simplicity, you can also run `./build-live.sh`
 
-Note that the ```tasks``` service will exit immediately (there is nothing in our code for it), but even in
-development, this service would need to be restarted in order to pick up code changes.
+A CI/CD process would publish these images to a container registry, but that is more than
+we need for this demonstration.
 
+### Starting the 'live' copy of the services ###
 
-The development environment can be shut down with the command:
+From the directory with the README file, type `cd live`,  This directory holds just the
+files we need to run our simulated production application.
 
-    docker-compose down
-    
-Note that this **does** keep our database, since we placed it on a named volume.  Next time we bring the environment up,
-the data would be available to us.  The volume can be removed completely with ```docker-compose down --volumes```
+The configuration for the nginx server can be found in the `httpd/default.conf` file,
+which gets pulled into the staticlayer image with the rest of the static files.
 
+The `docker-compose.yml` file in this directory references our built images and
+also a real nginx process in the 'httpd' service.  This is the entry point for our application and will handle the static files for us, and also pass Django requests to the 'app' service.
 
-## CI/CD: Getting to a Live Deployment
+Start the 'live' environment with `docker-compose up -d`.
 
-In development, we referenced the targets from the ```Dockerfile``` directly, and they are built when requested with
-the ```docker-compose build --pull``` command.
+Once everything has started, visit [http://localhost:8001](http://localhost:8001) to view the results.  Note that
+the 'debug' setting has been turned off.  
 
-For a live deployment, we want to name our Docker images.  In the process of deploying your application through some
-CI/CD pipeline, the images can be built with the commands:
+You shouldn't see other changes from our development version of the application, however the static image is no longer coming from Django, but from the nginx web server.
 
-    docker build --target applayer --tag my-applayer:latest .
-    docker build --target staticlayer --tag my-staticlayer:latest .
-    
-These commands create images that can be pushed to a Docker Registry.  They can have version tags.  It is strongly 
-suggested to use specifically named versions instead of ```latest```, since it is the default.  That way you can roll 
-back to a prior version of your image.
+## Making this your own ##
 
-
-## The Live deployment
-
-The ```live-docker-compose.yml``` file is very similar to the one we use for development, with notable exceptions:
-
-  - The database volume has been renamed to ```live-db``` avoid conflict with development
-  - The ```prod.env``` file is used for environment settings
-  - The image names are referenced, rather than being built on demand
-  - The ```app``` service runs the ```uwsgi``` command (```gunicorn``` can also be used as an alternative)
-  - The ```httpd``` service connects to the ```app``` service
-
-If demonstrating this on the same machine we used for development, be sure to shut down the development environment.
-
-The command to bring up the environment is almost the same:
-
-    docker-compose up -f live-docker-compose.yml
- 
-The test deployment should be accessible on [http://localhost:8001]()
-
-
-## Making this your own
-
-The ```DEBUG=True``` is still set: this is not desirable for a live environment, but needed for this demonstration.
+You can make changes in the development environment: Try changing the web page found in the `projects/hello/templates/hello_world.html` file.  Check this in the development 
+url (port 8000) and verify that the changes don't appear in the 'live' url (port 8001) until the images are rebuilt and the services restarted.
 
 Many other configuration entries might be included in the environment files or in other, more secure, secrets files.
 
 It is quite possible to include a more secure configuration for Nginx, and even reference SSL certificates and private 
-key files, although it is not recommended that these get built into the image files.
+key files, although you should reference such sensitive files as docker-compose 'volumes' rather than build them into the images.
 

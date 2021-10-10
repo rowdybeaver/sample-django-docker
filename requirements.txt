@@ -1,5 +1,7 @@
 Django
-celery
-psycopg2-binary
+django-redis
 redis
-uWSGI
+psycopg2-binary
+celery
+gunicorn
+uvicorn[standard]

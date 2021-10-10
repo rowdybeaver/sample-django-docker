@@ -1,54 +1,68 @@
+###  Development docker-compose file
+#   This docker-compose.yml file is useful for development and debugging as it mounts the project directory into
+#   the running application containers.  While the 'app' container will restart as code changes, the 'task' container
+#   will need to be manually restarted to pick up the changed application code.
+###
+
 version: "3.7"
 volumes:
+  #  A named volume so Docker can persist the database between restarts
   my-db:
+
+# The following section simply defines a reusable section of yml called 'app_image'
+x-django-app:  &app_image
+    build:
+      context: .
+      target: applayer
+    restart: "unless-stopped"
+    env_file:
+      - ./dev.env
+    volumes:
+      - ./project/:/code/
+    depends_on:
+      - db
+      - redis
+    entrypoint: python /wait_entrypoint.py --quiet db:5432 redis:6379 --
 
 services:
   db:
-    image: postgres
+    image: postgres:13
     volumes:
+      # The named volume earlier must be mapped to a location
       - my-db:/var/lib/postgresql/data
     env_file:
-      - ./unittest.env
+      - dev.env
 
   redis:
-    image: redis
+    image: redis:6
 
+  # Reference the app_image configuration to run our Django application server
   app:
-    build:
-      context: .
-      target: applayer
-    restart: "no"
-    env_file:
-      - ./unittest.env
-    volumes:
-      - ./project/:/code/
+    <<: *app_image
     ports:
       - "127.0.0.1:8000:8000"
-    depends_on:
-      - db
-      - redis
-    entrypoint: python /wait_entrypoint.py --quiet db:5432 redis:6379 --
     command: python manage.py runserver 0.0.0.0:8000
 
+  # Reference the app_image configuration to run our Celery tasks
   tasks:
-    build:
-      context: .
-      target: applayer
-    restart: unless-stopped
-    restart: "no"
-    env_file:
-      - ./unittest.env
-    volumes:
-      - ./project/:/code/
-    depends_on:
-      - db
-      - redis
-    entrypoint: python /wait_entrypoint.py --quiet db:5432 redis:6379 --
-    command: celery worker -A project -B -l INFO 
+    <<: *app_image
+    command: celery -A project worker -B -l INFO 
 
+  # Reference the app_image configuration to run migrations and exit (restarts have been turned off)
+  # This can also be invoked for special purposes:
+  # 'docker-compose run cmd manage.py createsuperuser' to create the admin user
+  # 'docker-compose run cmd manage.py shell' to get a python prompt with our code
+  # 'docker-compose run cmd /bin/bash` to get a command line inside a fresh container
+  cmd:
+    <<: *app_image
+    restart: "no"
+    command: manage.py migrate --no-input
+
+  # This builds the staticlayer container to ensure it builds, but does nothing (/bin/true)
   httpd:
     # We build this to ensure we can create the target, but not needed to test
     build:
       context: .
       target: staticlayer
+    restart: "no"
     command: /bin/true

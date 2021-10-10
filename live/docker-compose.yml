@@ -1,0 +1,52 @@
+### What a production docker-compose file might look like
+#   The build-live.sh script creates the images that are referenced here.
+#   An nginx container (httpd) is added to serve as a reverse proxy and to handle the static files.
+#   There is a 'cmd' container that applies migrations and only runs once.
+###
+
+version: "3.7"
+volumes:
+  live-db:
+
+x-django-app:  &app_image
+    image: my_applayer:latest
+    restart: unless-stopped
+    env_file:
+      - ./live.env
+    depends_on:
+      - db
+      - redis
+    entrypoint: python /wait_entrypoint.py -q db:5432 redis:6379 --
+
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - live-db:/var/lib/postgresql/data
+    env_file:
+      - ./live.env
+
+  redis:
+    image: redis:6
+
+  # Instead of 'manage.py runserver' production should use gunicorn and uvicorn
+  app:
+    <<: *app_image
+    command: /usr/local/bin/gunicorn --chdir /code project.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+
+  tasks:
+    <<: *app_image
+    command: celery -A project worker -B -l INFO
+
+  cmd:
+    <<: *app_image
+    restart: "no"
+    command: manage.py migrate --no-input
+
+  httpd:
+    image: my_staticlayer:latest
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "127.0.0.1:8001:80"

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{% load static %}
+{% load tz %}
+{% spaceless %}
+
+
+{% comment %}
+
+	PURPOSE: Master HTML body template
+
+	NEEDS:
+
+	OPTIONAL:
+
+	BLOCKS:
+		title - HTML header title (not the H1 tag's title)
+		headextra - Extra headers
+		scripts - Extra scripts
+		body - The complete page body
+		footer - the bottom of the page body
+
+{% endcomment %}
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Language" content="en-us"/>
+    <title>Hello World!</title>
+</head>
+<body>
+    <h1>Hello World!</h1>
+	<ul>
+		<li>TIME={{ now|date }} {{ now|time:"H:i:s" }}</li>
+		<li>COUNTER={{ counter }}</li>
+		<li>DEBUG={{ debug }}</li>
+		<li>CONTAINER={{ container }}</li>
+		<li>REMOTE_ADDR={{ remote_addr }}</li>
+	</ul>
+    <img src="{% static 'ipcc_bluemarble_west_front.jpg' %}" alt="World">
+</body>
+</html>
+{% endspaceless %}

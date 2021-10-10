@@ -1,0 +1,10 @@
+# No need to rebuild the Docker images if any of these files change
+.git
+.gitignore
+live
+build-dev.sh
+build-live.sh
+dev.env
+docker-compose.yml
+LICENSE
+README.md
