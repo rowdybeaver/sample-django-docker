@@ -9,7 +9,7 @@ volumes:
   live-db:
 
 x-django-app:  &app_image
-    image: my_applayer:latest
+    image: my_app_image:latest
     restart: unless-stopped
     env_file:
       - ./live.env
@@ -44,7 +44,7 @@ services:
     command: manage.py migrate --no-input
 
   httpd:
-    image: my_staticlayer:latest
+    image: my_static_image:latest
     restart: unless-stopped
     depends_on:
       - app

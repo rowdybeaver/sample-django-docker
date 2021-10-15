@@ -64,12 +64,12 @@ is little configuration on the production machine.
 This will require static Docker images to be built.  In the directory with the README file, invoke the two commands.
 **NOTE** the period at the end of each line!
 
-    docker build --target applayer --tag my_applayer .
-    docker build --target staticlayer --tag my_staticlayer .
+    docker build --target applayer --tag my_app_image .
+    docker build --target staticlayer --tag my_static_image .
 
 For simplicity, you can also run `./build-live.sh`
 
-A CI/CD process would publish these images to a container registry, but that is more than
+A CI/CD process would use 'docker push' to publish these images to a container registry, but that is more than
 we need for this demonstration.
 
 ### Starting the 'live' copy of the services ###

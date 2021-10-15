@@ -1,8 +1,8 @@
 #!/bin/bash
 # Build the Docker images for use in the 'live' environment
 
-docker build --target applayer --tag my_applayer .
-docker build --target staticlayer --tag my_staticlayer .
+docker build --target applayer --tag my_app_image .
+docker build --target staticlayer --tag my_static_image .
 
 #
 echo "Build complete! Now do the following:"
