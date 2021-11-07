@@ -8,6 +8,7 @@ This sample project was built to demonstrate several principles:
   4. Use of Celery in Docker for asynchronous tasks
   5. Uses advanced syntax for repeating sections of the `docker-compose.yml` file
   6. Uses nginx in the 'live' version of the `docker-compose.yml` for static files
+  7. Describe the approach for user-provided media files
 
 There is a lot to discover in this simple application.  It is meant for you to become familiar with 
 the concepts and customize adapt them to your needs.
@@ -89,6 +90,37 @@ Once everything has started, visit [http://localhost:8001](http://localhost:8001
 the 'debug' setting has been turned off.  
 
 You shouldn't see other changes from our development version of the application, however the static image is no longer coming from Django, but from the nginx web server.
+
+## Handline of media files ##
+
+Support for User-uploaded files, like profile pictures, can be added to the application [normally](https://docs.djangoproject.com/en/3.2/topics/files/).
+
+There are comments in the `httpd/default.conf` and the `live/docker-compose.yml` files to
+indicate what would be needed.
+
+The only requirement is storing them on a device that can be accessed by the `app` container and the `httpd` (nginx)
+container.  For this example, a local directory will be used.  The `live/docker-compose.yml` can be modified to indicate this volume:
+
+    app:
+      ...
+      volumes:
+        - /my/media/:/code/media
+    httpd:
+      ...
+      volumes:
+        - /my/media/:/code/media:ro
+
+Notice the `:ro` suffix on the volume in the `httpd` container, which limits that container to read-only access. 
+This prevents anyone who might hack into the container from messing with our files.  In fact, since the static files are
+built into the image, should our website somehow get defaced, all we have to do is restart the
+container and everything will be reset to the original pristine condition.
+
+Certainly, if the `tasks` or `cmd` containers need access to the media files, the volume could be added to their
+respective sections, with or without the read-only suffix as appropriate.
+
+Other than the changes to the Django settings and application, the file `httpd/default.conf` will need to have
+the section for media uncommented before building the Docker images.
+
 
 ## Making this your own ##
 

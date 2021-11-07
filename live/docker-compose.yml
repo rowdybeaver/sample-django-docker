@@ -33,6 +33,8 @@ services:
   app:
     <<: *app_image
     command: /usr/local/bin/gunicorn --chdir /code project.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+    # volumes:
+    #   - my-media:/code/media
 
   tasks:
     <<: *app_image
@@ -50,3 +52,12 @@ services:
       - app
     ports:
       - "127.0.0.1:8001:80"
+    # volumes:
+    #   - my-media:/code/media:ro
+
+## Note the ':ro' suffix for the media volumne on the httpd container,
+## as it does not get access to update those files.
+## Media files would probably be stored on a more persistent volume
+## For this example, we will tell Docker manage it for us.
+# volumes:
+#   my-media:
