@@ -91,7 +91,7 @@ the 'debug' setting has been turned off.
 
 You shouldn't see other changes from our development version of the application, however the static image is no longer coming from Django, but from the nginx web server.
 
-## Handline of media files ##
+## Handling of media files ##
 
 Support for User-uploaded files, like profile pictures, can be added to the application [normally](https://docs.djangoproject.com/en/3.2/topics/files/).
 
