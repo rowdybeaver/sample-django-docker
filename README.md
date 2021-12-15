@@ -70,8 +70,12 @@ This will require static Docker images to be built.  In the directory with the R
 
 For simplicity, you can also run `./build-live.sh`
 
-A CI/CD process would use 'docker push' to publish these images to a container registry, but that is more than
-we need for this demonstration.
+You can use these images locally, but if you wanted to push them to a registry you will need to use appropriate tag 
+names.  For Docker Hub, you will need your username followed by a slash followed by the image name.  If you use another
+registry, you would preface it with the domain name.  Such a full name might look like 
+`my.registry.com/username/imagename`  Once the image has been tagged appropriately, you can use `docker push` followed 
+by the full image name.  The build and push process could be done by a CI/CD process, but that is more than
+we need for this demonstration and custom to your configuration.
 
 ### Starting the 'live' copy of the services ###
 
